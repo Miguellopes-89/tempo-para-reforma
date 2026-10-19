@@ -3,8 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Até à reforma</title>
+    <title>Tempo para Reforma</title>
     <meta name="description" content="Contagem decrescente até ao dia da reforma. Os dados ficam só no seu browser." />
+    <meta property="og:title" content="Tempo para Reforma" />
+    <meta property="og:description" content="Quanto tempo falta para a sua reforma? Contagem decrescente simples, com os dados guardados só no seu browser." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://miguellopes-89.github.io/tempo-para-reforma/" />
+    <link rel="canonical" href="https://miguellopes-89.github.io/tempo-para-reforma/" />
     <meta name="theme-color" content="#0e0f11" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a2e34'/%3E%3Crect x='8' y='31' width='48' height='2' fill='%230e0f11'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='34' text-anchor='middle' fill='%23f4f1ea'%3ER%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -644,7 +649,7 @@
     <main class="stage">
       <!-- ================= Ecrã de configuração ================= -->
       <section class="panel narrow" id="setup" hidden>
-        <p class="eyebrow">Até à reforma</p>
+        <p class="eyebrow">Tempo para Reforma</p>
         <h1 class="title">Quando chega a sua reforma?</h1>
         <p class="subtitle">Indique a data, ou deixe-nos calculá-la a partir da sua idade de acesso à pensão.</p>
 
@@ -760,11 +765,14 @@
       /* =========================================================
          Guardar / ler as preferências (apenas neste browser)
          ========================================================= */
-      const STORAGE_KEY = "conta-reforma:v1";
+      const APP_NAME = "Tempo para Reforma";
+      const STORAGE_KEY = "tempo-para-reforma:v1";
+      // Nome antigo do projeto: lido uma vez para quem já tinha dados guardados.
+      const LEGACY_STORAGE_KEY = "conta-reforma:v1";
 
       function loadSettings() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
           return raw ? JSON.parse(raw) : null;
         } catch {
           return null;
@@ -774,6 +782,7 @@
       function saveSettings(settings) {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
         } catch {
           /* Sem armazenamento disponível: a contagem funciona na mesma até fechar a página. */
         }
@@ -1080,7 +1089,7 @@
           settings.mode === "age"
             ? "Aos " + ageText(Number(settings.ageYears), Number(settings.ageMonths || 0)) + " de idade"
             : "À meia-noite, hora local";
-        document.title = "Até à reforma · " + label;
+        document.title = APP_NAME + " · " + label;
         careerStart = parseISODate(settings.career);
         if (careerStart && careerStart >= target) careerStart = null;
         els.progressCaption.textContent = careerStart ? "Desde " + dateFormat.format(careerStart) : "";
@@ -1195,7 +1204,7 @@
         updatePreview();
         els.countdown.hidden = true;
         els.setup.hidden = false;
-        document.title = "Até à reforma";
+        document.title = APP_NAME;
       }
 
       modeButtons.forEach((btn) => btn.addEventListener("click", () => setMode(btn.dataset.mode)));

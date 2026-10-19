@@ -1,12 +1,14 @@
-# Até à reforma
+# Tempo para Reforma
 
 Uma contagem decrescente, simples e bonita, até ao dia da sua reforma.
+
+**👉 [Abrir a ferramenta](https://miguellopes-89.github.io/tempo-para-reforma/)**
 
 Mostra quanto tempo falta (anos, meses, dias, horas, minutos e segundos) num relógio de painéis, a percentagem da carreira já percorrida e quantos dias, dias úteis e fins de semana faltam.
 
 ## Como usar
 
-1. Abra a ferramenta no browser.
+1. Abra a [ferramenta](https://miguellopes-89.github.io/tempo-para-reforma/) no browser.
 2. Indique a data da reforma de uma de duas formas:
    - **Pela idade:** data de nascimento + idade de acesso à pensão (por exemplo, 66 anos e 9 meses);
    - **Sei a data:** a data exata da reforma.
