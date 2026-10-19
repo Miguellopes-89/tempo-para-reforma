@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Até à reforma</title>
+    <meta name="description" content="Contagem decrescente até ao dia da reforma. Os dados ficam só no seu browser." />
+    <meta name="theme-color" content="#0e0f11" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a2e34'/%3E%3Crect x='8' y='31' width='48' height='2' fill='%230e0f11'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='34' text-anchor='middle' fill='%23f4f1ea'%3ER%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ---------- Cores e tipografia (tema escuro por omissão) ---------- */
+      :root {
+        --bg: #0e0f11;
+        --fg: #f4f1ea;
+        --muted: #9a968e;
+        --accent: #8fb39a;
+        --panel: #15171a;
+        --line: rgb(244 241 234 / 0.1);
+        --tile-top: #2a2e34;
+        --tile-bottom: #1f2227;
+        --tile-fg: #f4f1ea;
+        --field: #1c1f23;
+        --glow: rgb(143 179 154 / 0.14);
+        --font-sans: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+        --font-serif: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+        color-scheme: dark;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f3f0e9;
+          --fg: #1b1c1e;
+          --muted: #6b6760;
+          --accent: #4f7a5d;
+          --panel: #fbfaf6;
+          --line: rgb(27 28 30 / 0.1);
+          --tile-top: #2a2e34;
+          --tile-bottom: #1f2227;
+          --tile-fg: #f4f1ea;
+          --field: #ffffff;
+          --glow: rgb(79 122 93 / 0.12);
+          color-scheme: light;
+        }
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background:
+          radial-gradient(60rem 40rem at 50% -10%, var(--glow), transparent 70%),
+          var(--bg);
+        color: var(--fg);
+        font-family: var(--font-sans);
+        line-height: 1.5;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      button {
+        cursor: pointer;
+        font: inherit;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      ::selection {
+        background: color-mix(in oklab, var(--accent) 45%, transparent);
+      }
+
+      /* ---------- Estrutura ---------- */
+      .stage {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem 1rem;
+      }
+
+      .panel {
+        container-type: inline-size;
+        width: min(100%, 46rem);
+        border: 1px solid var(--line);
+        border-radius: 1.75rem;
+        background: var(--panel);
+        padding: 1.75rem 1.1rem 1.5rem;
+        box-shadow: 0 30px 80px -40px rgb(0 0 0 / 0.5);
+        animation: rise 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .panel.narrow {
+        width: min(100%, 30rem);
+      }
+
+      @media (min-width: 640px) {
+        .panel {
+          padding: 2.75rem 2.5rem 2.25rem;
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .title {
+        margin: 0.6rem 0 0;
+        font-family: var(--font-serif);
+        font-weight: 500;
+        font-size: clamp(2rem, 7cqi, 3.2rem);
+        letter-spacing: -0.02em;
+        line-height: 1.12;
+        text-wrap: balance;
+      }
+
+      .subtitle {
+        margin: 0.5rem 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .intro {
+        text-align: center;
+        margin-bottom: clamp(1.75rem, 4cqi, 2.5rem);
+      }
+
+      /* ---------- Relógio de painéis ---------- */
+      .clock {
+        --digit-w: clamp(2.1rem, 12.2cqi, 5.3rem);
+        --digit-h: calc(var(--digit-w) * 1.46);
+        --digit-fs: calc(var(--digit-w) * 0.78);
+        --digit-radius: calc(var(--digit-w) * 0.16);
+        --split: 3px;
+        display: flex;
+        flex-direction: column;
+        gap: clamp(1.3rem, 3.5cqi, 2rem);
+      }
+
+      .fc-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(0.45rem, 2.2cqi, 1.75rem);
+      }
+
+      .unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .pair {
+        display: flex;
+        gap: clamp(0.2rem, 0.7cqi, 0.4rem);
+      }
+
+      .unit-label {
+        margin-top: 0.65rem;
+        color: var(--muted);
+        font-size: clamp(0.62rem, 2.1cqi, 0.78rem);
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .digit {
+        position: relative;
+        width: var(--digit-w);
+        height: var(--digit-h);
+        perspective: 900px;
+      }
+
+      .half,
+      .leaf {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: calc(50% - (var(--split) / 2));
+        overflow: hidden;
+      }
+
+      .half-top,
+      .leaf-top {
+        top: 0;
+        border-radius: var(--digit-radius) var(--digit-radius) 2px 2px;
+        background: var(--tile-top);
+      }
+
+      .half-bottom,
+      .leaf-bottom {
+        bottom: 0;
+        border-radius: 2px 2px var(--digit-radius) var(--digit-radius);
+        background: var(--tile-bottom);
+      }
+
+      .half-top {
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+      }
+
+      .half-bottom {
+        box-shadow: 0 10px 18px rgb(0 0 0 / 0.25);
+      }
+
+      .num {
+        position: absolute;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: var(--digit-h);
+        color: var(--tile-fg);
+        font-weight: 500;
+        font-size: var(--digit-fs);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .half-top .num,
+      .leaf-top .num {
+        top: 0;
+      }
+
+      .half-bottom .num,
+      .leaf-bottom .num {
+        bottom: 0;
+      }
+
+      .leaf-top {
+        z-index: 3;
+        transform-origin: center bottom;
+        animation: fc-fold 250ms cubic-bezier(0.45, 0.05, 1, 0.7) forwards;
+      }
+
+      .leaf-bottom {
+        z-index: 2;
+        transform-origin: center top;
+        transform: rotateX(90deg);
+        animation: fc-unfold 250ms cubic-bezier(0, 0.4, 0.2, 1) 250ms forwards;
+      }
+
+      .leaf-top::after,
+      .leaf-bottom::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: black;
+        pointer-events: none;
+      }
+
+      .leaf-top::after {
+        opacity: 0;
+        animation: fc-shade-in 250ms linear forwards;
+      }
+
+      .leaf-bottom::after {
+        opacity: 0.42;
+        animation: fc-shade-out 250ms linear 250ms forwards;
+      }
+
+      @keyframes fc-fold {
+        to {
+          transform: rotateX(-90deg);
+        }
+      }
+
+      @keyframes fc-unfold {
+        to {
+          transform: rotateX(0deg);
+        }
+      }
+
+      @keyframes fc-shade-in {
+        to {
+          opacity: 0.42;
+        }
+      }
+
+      @keyframes fc-shade-out {
+        to {
+          opacity: 0;
+        }
+      }
+
+      /* ---------- Barra de progresso da carreira ---------- */
+      .progress {
+        margin-top: clamp(1.75rem, 4cqi, 2.4rem);
+      }
+
+      .progress-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.6rem;
+      }
+
+      .progress-label {
+        color: var(--muted);
+        font-size: clamp(0.62rem, 2.1cqi, 0.78rem);
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .progress-value {
+        font-family: var(--font-serif);
+        font-weight: 500;
+        font-size: clamp(1.1rem, 4cqi, 1.5rem);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+
+      .progress-track {
+        position: relative;
+        height: 0.75rem;
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--fg) 9%, transparent);
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 65%, var(--bg)), var(--accent));
+        transition: width 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .progress-caption {
+        margin: 0.55rem 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .optional {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      /* ---------- Estatísticas ---------- */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-top: clamp(1.75rem, 4cqi, 2.4rem);
+        padding-top: clamp(1.25rem, 3cqi, 1.75rem);
+        border-top: 1px solid var(--line);
+        text-align: center;
+      }
+
+      .stat-value {
+        display: block;
+        font-family: var(--font-serif);
+        font-weight: 500;
+        font-size: clamp(1.15rem, 4.6cqi, 1.75rem);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+      }
+
+      .stat-label {
+        display: block;
+        margin-top: 0.2rem;
+        color: var(--muted);
+        font-size: clamp(0.68rem, 2.2cqi, 0.8rem);
+      }
+
+      .done {
+        text-align: center;
+        padding: 1rem 0 0.5rem;
+      }
+
+      .done-emoji {
+        font-size: 3.5rem;
+        line-height: 1;
+      }
+
+      .done p {
+        margin: 0.75rem 0 0;
+        color: var(--muted);
+      }
+
+      .footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-top: clamp(1.5rem, 3.5cqi, 2rem);
+      }
+
+      .footnote {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      /* ---------- Botões ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        min-height: 2.75rem;
+        padding: 0 1.25rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--fg);
+        font-weight: 500;
+        font-size: 0.92rem;
+        transition:
+          background 150ms,
+          border-color 150ms,
+          transform 150ms;
+      }
+
+      .btn:hover {
+        border-color: color-mix(in oklab, var(--fg) 30%, transparent);
+        background: color-mix(in oklab, var(--fg) 5%, transparent);
+      }
+
+      .btn:active {
+        transform: scale(0.98);
+      }
+
+      .btn-primary {
+        width: 100%;
+        min-height: 3.1rem;
+        border: 0;
+        background: var(--accent);
+        color: #0e0f11;
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .btn-primary:hover {
+        background: color-mix(in oklab, var(--accent) 88%, white);
+      }
+
+      .btn svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      /* ---------- Formulário ---------- */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+        margin-top: 1.5rem;
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 0.25rem;
+        border-radius: 999px;
+        background: var(--field);
+        border: 1px solid var(--line);
+      }
+
+      .segmented button {
+        min-height: 2.5rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 0.88rem;
+        transition:
+          background 150ms,
+          color 150ms;
+      }
+
+      .segmented button[aria-pressed="true"] {
+        background: var(--tile-top);
+        color: #f4f1ea;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .field label,
+      .field legend {
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 0;
+      }
+
+      fieldset.field {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+      }
+
+      .input-wrap {
+        position: relative;
+      }
+
+      .input-wrap span {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 0.85rem;
+        pointer-events: none;
+      }
+
+      input {
+        width: 100%;
+        min-height: 3rem;
+        padding: 0 1rem;
+        border-radius: 0.9rem;
+        border: 1px solid var(--line);
+        background: var(--field);
+        color: var(--fg);
+        font: inherit;
+        font-size: 1rem;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+      }
+
+      input[aria-invalid="true"] {
+        border-color: #d9826b;
+      }
+
+      .hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .hint a {
+        color: var(--accent);
+      }
+
+      .preview {
+        margin: 0;
+        padding: 0.85rem 1rem;
+        border-radius: 0.9rem;
+        background: color-mix(in oklab, var(--accent) 10%, transparent);
+        color: var(--fg);
+        font-size: 0.92rem;
+        text-align: center;
+      }
+
+      .preview.error {
+        background: rgb(217 130 107 / 0.12);
+        color: #e0957f;
+      }
+
+      .privacy {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        margin: 0.25rem 0 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-align: center;
+      }
+
+      .privacy svg {
+        width: 0.9rem;
+        height: 0.9rem;
+        flex-shrink: 0;
+      }
+
+      .link-btn {
+        align-self: center;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        padding: 0.4rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .leaf {
+          display: none;
+        }
+        .panel {
+          animation: none;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .unit-label {
+          letter-spacing: 0.08em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <!-- ================= Ecrã de configuração ================= -->
+      <section class="panel narrow" id="setup" hidden>
+        <p class="eyebrow">Até à reforma</p>
+        <h1 class="title">Quando chega a sua reforma?</h1>
+        <p class="subtitle">Indique a data, ou deixe-nos calculá-la a partir da sua idade de acesso à pensão.</p>
+
+        <form class="form" id="setup-form" novalidate>
+          <div class="segmented" role="group" aria-label="Como indicar a data">
+            <button type="button" data-mode="age" aria-pressed="true">Pela idade</button>
+            <button type="button" data-mode="date" aria-pressed="false">Sei a data</button>
+          </div>
+
+          <div id="mode-age">
+            <div class="form" style="margin-top: 0">
+              <div class="field">
+                <label for="birth">Data de nascimento</label>
+                <input type="date" id="birth" min="1930-01-01" />
+              </div>
+              <fieldset class="field">
+                <legend>Idade de acesso à pensão</legend>
+                <div class="row">
+                  <div class="input-wrap">
+                    <input type="number" id="age-years" inputmode="numeric" min="50" max="80" aria-label="Anos" />
+                    <span>anos</span>
+                  </div>
+                  <div class="input-wrap">
+                    <input type="number" id="age-months" inputmode="numeric" min="0" max="11" aria-label="Meses" />
+                    <span>meses</span>
+                  </div>
+                </div>
+                <p class="hint">
+                  Não sabe? Consulte o simulador de pensão na
+                  <a href="https://app.seg-social.pt/" target="_blank" rel="noopener noreferrer">Segurança Social Direta</a>.
+                  A idade legal muda todos os anos, por isso pode atualizá-la aqui sempre que precisar.
+                </p>
+              </fieldset>
+            </div>
+          </div>
+
+          <div id="mode-date" hidden>
+            <div class="field">
+              <label for="target">Data da reforma</label>
+              <input type="date" id="target" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="career">Começou a trabalhar em <span class="optional">(opcional)</span></label>
+            <input type="date" id="career" min="1940-01-01" />
+            <p class="hint">Serve para mostrar a percentagem da carreira que já fez.</p>
+          </div>
+
+          <p class="preview" id="preview" aria-live="polite">Preencha os campos acima.</p>
+
+          <button type="submit" class="btn btn-primary">Começar contagem</button>
+          <button type="button" class="link-btn" id="cancel" hidden>Cancelar</button>
+
+          <p class="privacy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            Os dados ficam guardados apenas neste browser.
+          </p>
+        </form>
+      </section>
+
+      <!-- ================= Ecrã da contagem ================= -->
+      <section class="panel" id="countdown" hidden>
+        <header class="intro">
+          <p class="eyebrow">Faltam para a reforma</p>
+          <h1 class="title" id="date-title"></h1>
+          <p class="subtitle" id="date-sub"></p>
+        </header>
+
+        <div class="clock" id="clock" role="timer" aria-live="off"></div>
+
+        <div class="progress" id="progress" hidden>
+          <div class="progress-head">
+            <span class="progress-label">Carreira percorrida</span>
+            <span class="progress-value" id="progress-value"></span>
+          </div>
+          <div
+            class="progress-track"
+            id="progress-track"
+            role="progressbar"
+            aria-label="Carreira percorrida"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <p class="progress-caption" id="progress-caption"></p>
+        </div>
+
+        <div class="done" id="done" hidden>
+          <div class="done-emoji" aria-hidden="true">🎉</div>
+          <h2 class="title">Chegou o dia!</h2>
+          <p>Bom descanso e boa reforma.</p>
+        </div>
+
+        <div class="stats" id="stats">
+          <div><span class="stat-value" id="stat-days"></span><span class="stat-label">dias no total</span></div>
+          <div><span class="stat-value" id="stat-workdays"></span><span class="stat-label">dias úteis*</span></div>
+          <div><span class="stat-value" id="stat-weekends"></span><span class="stat-label">fins de semana</span></div>
+        </div>
+
+        <div class="footer">
+          <p class="footnote" id="footnote">* De segunda a sexta, sem descontar feriados.</p>
+          <button type="button" class="btn" id="edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+            Alterar dados
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      /* =========================================================
+         Guardar / ler as preferências (apenas neste browser)
+         ========================================================= */
+      const STORAGE_KEY = "conta-reforma:v1";
+
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSettings(settings) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        } catch {
+          /* Sem armazenamento disponível: a contagem funciona na mesma até fechar a página. */
+        }
+      }
+
+      /* =========================================================
+         Datas
+         ========================================================= */
+      const dateFormat = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long", year: "numeric" });
+      // "always": em pt-PT, sem isto, 8192 não leva espaço mas 11 468 leva.
+      const numberFormat = new Intl.NumberFormat("pt-PT", { useGrouping: "always" });
+
+      /** "2060-01-31" -> Date à meia-noite local (evita o desvio de fuso horário de new Date("...")). */
+      function parseISODate(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+        if (!match) return null;
+        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      function toISODate(date) {
+        const pad = (n) => String(n).padStart(2, "0");
+        return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+      }
+
+      function addMonths(date, months) {
+        const next = new Date(date.getTime());
+        const day = next.getDate();
+        next.setDate(1);
+        next.setMonth(next.getMonth() + months);
+        const dim = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+        next.setDate(Math.min(day, dim));
+        return next;
+      }
+
+      function plural(value, one, many) {
+        return value === 1 ? one : many;
+      }
+
+      function ageText(years, months) {
+        const parts = [years + " " + plural(years, "ano", "anos")];
+        if (months > 0) parts.push(months + " " + plural(months, "mês", "meses"));
+        return parts.join(" e ");
+      }
+
+      /** Converte as preferências guardadas na data da reforma (ou null se inválidas). */
+      function resolveTarget(settings) {
+        if (!settings) return null;
+        if (settings.mode === "date") return parseISODate(settings.date);
+        const birth = parseISODate(settings.birth);
+        const years = Number(settings.ageYears);
+        const months = Number(settings.ageMonths || 0);
+        if (!birth || !Number.isInteger(years) || !Number.isInteger(months)) return null;
+        if (years < 50 || years > 80 || months < 0 || months > 11) return null;
+        return addMonths(birth, years * 12 + months);
+      }
+
+      /**
+       * Diferença em calendário (anos, meses, dias…) tal que somar as partes a `from` dá `to`.
+       * Horas/minutos/segundos seguem o relógio local, para a mudança de hora não mostrar "25 horas".
+       */
+      function diffUntil(from, to) {
+        if (to.getTime() <= from.getTime()) {
+          return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, done: true };
+        }
+        let years = to.getFullYear() - from.getFullYear();
+        if (addMonths(from, years * 12).getTime() > to.getTime()) years -= 1;
+        if (years < 0) years = 0;
+        const afterYears = addMonths(from, years * 12);
+        let months = (to.getFullYear() - afterYears.getFullYear()) * 12 + (to.getMonth() - afterYears.getMonth());
+        if (months < 0) months = 0;
+        if (addMonths(afterYears, months).getTime() > to.getTime()) months -= 1;
+        if (months < 0) months = 0;
+        let cursor = addMonths(afterYears, months);
+        let days = 0;
+        while (days < 40) {
+          const next = new Date(cursor.getTime());
+          next.setDate(next.getDate() + 1);
+          if (next.getTime() > to.getTime()) break;
+          cursor = next;
+          days += 1;
+        }
+        let hours = to.getHours() - cursor.getHours();
+        let minutes = to.getMinutes() - cursor.getMinutes();
+        let seconds = to.getSeconds() - cursor.getSeconds();
+        if (seconds < 0) {
+          seconds += 60;
+          minutes -= 1;
+        }
+        if (minutes < 0) {
+          minutes += 60;
+          hours -= 1;
+        }
+        if (hours < 0) hours += 24;
+        return { years, months, days, hours, minutes, seconds, done: false };
+      }
+
+      /** Dias de calendário, dias úteis (seg–sex) e fins de semana entre hoje e a data. */
+      function dayStats(target) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let total = 0;
+        let workdays = 0;
+        let weekends = 0;
+        const cursor = new Date(today.getTime());
+        while (cursor < target) {
+          const weekday = cursor.getDay();
+          if (weekday === 6) weekends += 1;
+          if (weekday !== 0 && weekday !== 6) workdays += 1;
+          total += 1;
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        return { total, workdays, weekends };
+      }
+
+      /* =========================================================
+         Relógio de painéis
+         ========================================================= */
+      const UNITS = [
+        { key: "years", one: "ano", many: "anos" },
+        { key: "months", one: "mês", many: "meses" },
+        { key: "days", one: "dia", many: "dias" },
+        { key: "hours", one: "hora", many: "horas" },
+        { key: "minutes", one: "minuto", many: "minutos" },
+        { key: "seconds", one: "segundo", many: "segundos" },
+      ];
+
+      const clock = document.getElementById("clock");
+      const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const groups = [];
+
+      for (let row = 0; row < 2; row += 1) {
+        const rowEl = document.createElement("div");
+        rowEl.className = "fc-row";
+        for (let col = 0; col < 3; col += 1) {
+          const unit = UNITS[row * 3 + col];
+          const unitEl = document.createElement("div");
+          unitEl.className = "unit";
+          const pair = document.createElement("div");
+          pair.className = "pair";
+          const slots = [];
+          for (let i = 0; i < 2; i += 1) {
+            const digit = document.createElement("div");
+            digit.className = "digit";
+            digit.setAttribute("aria-hidden", "true");
+            digit.innerHTML =
+              '<div class="half half-top"><span class="num"></span></div>' +
+              '<div class="half half-bottom"><span class="num"></span></div>';
+            digit._shown = null;
+            pair.append(digit);
+            slots.push(digit);
+          }
+          const label = document.createElement("div");
+          label.className = "unit-label";
+          unitEl.append(pair, label);
+          rowEl.append(unitEl);
+          groups.push({ unit, slots, label });
+        }
+        clock.append(rowEl);
+      }
+
+      function paintDigit(el, value) {
+        const top = el.querySelector(".half-top .num");
+        const bottom = el.querySelector(".half-bottom .num");
+        if (reduceMotion || el._shown === null || el._shown === value || document.hidden) {
+          el._shown = value;
+          top.textContent = value;
+          bottom.textContent = value;
+          return;
+        }
+        const from = el._shown;
+        el._shown = value;
+        top.textContent = value;
+        bottom.textContent = from;
+        el.querySelectorAll(".leaf").forEach((leaf) => leaf.remove());
+        const leafTop = document.createElement("div");
+        leafTop.className = "leaf leaf-top";
+        leafTop.innerHTML = '<span class="num"></span>';
+        leafTop.querySelector(".num").textContent = from;
+        const leafBottom = document.createElement("div");
+        leafBottom.className = "leaf leaf-bottom";
+        leafBottom.innerHTML = '<span class="num"></span>';
+        leafBottom.querySelector(".num").textContent = value;
+        el.append(leafTop, leafBottom);
+        let settled = false;
+        const settle = () => {
+          if (settled || el._shown !== value) return;
+          settled = true;
+          bottom.textContent = value;
+          leafTop.remove();
+          leafBottom.remove();
+        };
+        leafBottom.addEventListener("animationend", (event) => {
+          if (event.animationName === "fc-unfold") settle();
+        });
+        setTimeout(settle, 700);
+      }
+
+      function resetDigits() {
+        for (const group of groups) {
+          for (const slot of group.slots) {
+            slot._shown = null;
+            slot.querySelectorAll(".leaf").forEach((leaf) => leaf.remove());
+          }
+        }
+      }
+
+      /* =========================================================
+         Ecrã da contagem
+         ========================================================= */
+      const els = {
+        setup: document.getElementById("setup"),
+        countdown: document.getElementById("countdown"),
+        title: document.getElementById("date-title"),
+        sub: document.getElementById("date-sub"),
+        done: document.getElementById("done"),
+        stats: document.getElementById("stats"),
+        footnote: document.getElementById("footnote"),
+        statDays: document.getElementById("stat-days"),
+        statWorkdays: document.getElementById("stat-workdays"),
+        statWeekends: document.getElementById("stat-weekends"),
+        progress: document.getElementById("progress"),
+        progressValue: document.getElementById("progress-value"),
+        progressTrack: document.getElementById("progress-track"),
+        progressFill: document.getElementById("progress-fill"),
+        progressCaption: document.getElementById("progress-caption"),
+      };
+
+      const percentFormat = new Intl.NumberFormat("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      let target = null;
+      let careerStart = null;
+
+      /** Percentagem (0–100) do tempo entre o início da carreira e a reforma que já passou. */
+      function updateProgress() {
+        if (!careerStart) return;
+        const span = target.getTime() - careerStart.getTime();
+        const elapsed = Date.now() - careerStart.getTime();
+        const pct = Math.min(100, Math.max(0, (elapsed / span) * 100));
+        els.progressValue.textContent = percentFormat.format(pct) + " %";
+        els.progressFill.style.width = pct + "%";
+        els.progressTrack.setAttribute("aria-valuenow", pct.toFixed(2));
+      }
+      let timer = 0;
+      let statsDay = "";
+
+      function tick() {
+        if (!target) return;
+        const parts = diffUntil(new Date(), target);
+        const label = dateFormat.format(target);
+
+        clock.hidden = parts.done;
+        els.progress.hidden = parts.done || !careerStart;
+        els.stats.hidden = parts.done;
+        els.footnote.hidden = parts.done;
+        els.done.hidden = !parts.done;
+
+        if (parts.done) {
+          clock.setAttribute("aria-label", "Já é " + label + ".");
+          return;
+        }
+
+        const phrase = UNITS.map((unit) => parts[unit.key] + " " + plural(parts[unit.key], unit.one, unit.many));
+        clock.setAttribute(
+          "aria-label",
+          "Faltam " + phrase.slice(0, -1).join(", ") + " e " + phrase[phrase.length - 1] + " para " + label + ".",
+        );
+        for (const group of groups) {
+          const value = parts[group.unit.key];
+          group.label.textContent = plural(value, group.unit.one, group.unit.many);
+          String(Math.max(0, value))
+            .padStart(2, "0")
+            .split("")
+            .forEach((char, index) => paintDigit(group.slots[index], char));
+        }
+        updateProgress();
+
+        // As estatísticas só mudam uma vez por dia.
+        const todayKey = toISODate(new Date());
+        if (todayKey !== statsDay) {
+          statsDay = todayKey;
+          const stats = dayStats(target);
+          els.statDays.textContent = numberFormat.format(stats.total);
+          els.statWorkdays.textContent = numberFormat.format(stats.workdays);
+          els.statWeekends.textContent = numberFormat.format(stats.weekends);
+        }
+      }
+
+      function startClock() {
+        clearTimeout(timer);
+        const loop = () => {
+          tick();
+          timer = setTimeout(loop, 1000 - (Date.now() % 1000));
+        };
+        loop();
+      }
+
+      function showCountdown(settings) {
+        target = resolveTarget(settings);
+        if (!target) return showSetup(null);
+        const label = dateFormat.format(target);
+        els.title.textContent = label;
+        els.sub.textContent =
+          settings.mode === "age"
+            ? "Aos " + ageText(Number(settings.ageYears), Number(settings.ageMonths || 0)) + " de idade"
+            : "À meia-noite, hora local";
+        document.title = "Até à reforma · " + label;
+        careerStart = parseISODate(settings.career);
+        if (careerStart && careerStart >= target) careerStart = null;
+        els.progressCaption.textContent = careerStart ? "Desde " + dateFormat.format(careerStart) : "";
+        statsDay = "";
+        resetDigits();
+        els.setup.hidden = true;
+        els.countdown.hidden = false;
+        startClock();
+      }
+
+      /* =========================================================
+         Ecrã de configuração
+         ========================================================= */
+      const form = document.getElementById("setup-form");
+      const inputs = {
+        birth: document.getElementById("birth"),
+        ageYears: document.getElementById("age-years"),
+        ageMonths: document.getElementById("age-months"),
+        target: document.getElementById("target"),
+        career: document.getElementById("career"),
+      };
+      const modeButtons = document.querySelectorAll("[data-mode]");
+      const preview = document.getElementById("preview");
+      const cancelBtn = document.getElementById("cancel");
+      let mode = "age";
+
+      inputs.birth.max = toISODate(new Date());
+      inputs.target.min = toISODate(new Date());
+      inputs.career.max = toISODate(new Date());
+
+      function setMode(next) {
+        mode = next;
+        modeButtons.forEach((btn) => btn.setAttribute("aria-pressed", String(btn.dataset.mode === next)));
+        document.getElementById("mode-age").hidden = next !== "age";
+        document.getElementById("mode-date").hidden = next !== "date";
+        updatePreview();
+      }
+
+      function readForm() {
+        const career = inputs.career.value;
+        if (mode === "date") return { mode: "date", date: inputs.target.value, career };
+        return {
+          mode: "age",
+          birth: inputs.birth.value,
+          ageYears: inputs.ageYears.value === "" ? NaN : Number(inputs.ageYears.value),
+          ageMonths: inputs.ageMonths.value === "" ? 0 : Number(inputs.ageMonths.value),
+          career,
+        };
+      }
+
+      /** Devolve uma mensagem de erro, ou null se o formulário estiver válido. */
+      function validate(settings) {
+        Object.values(inputs).forEach((input) => input.removeAttribute("aria-invalid"));
+        const mark = (input, message) => {
+          input.setAttribute("aria-invalid", "true");
+          return message;
+        };
+        if (settings.mode === "date") {
+          if (!parseISODate(settings.date)) return mark(inputs.target, "Indique a data da reforma.");
+        } else {
+          if (!parseISODate(settings.birth)) return mark(inputs.birth, "Indique a data de nascimento.");
+          if (!Number.isInteger(settings.ageYears) || settings.ageYears < 50 || settings.ageYears > 80)
+            return mark(inputs.ageYears, "A idade deve estar entre 50 e 80 anos.");
+          if (!Number.isInteger(settings.ageMonths) || settings.ageMonths < 0 || settings.ageMonths > 11)
+            return mark(inputs.ageMonths, "Os meses devem estar entre 0 e 11.");
+        }
+        const date = resolveTarget(settings);
+        if (!date) return "Verifique os dados introduzidos.";
+        if (date.getTime() <= Date.now()) return "Essa data já passou. Parabéns, já está reformado(a)!";
+        if (date.getFullYear() > new Date().getFullYear() + 99) return "A data está demasiado longe.";
+        if (settings.career) {
+          const career = parseISODate(settings.career);
+          if (!career) return mark(inputs.career, "A data de início da carreira não é válida.");
+          if (career.getTime() > Date.now()) return mark(inputs.career, "O início da carreira não pode ser no futuro.");
+          const birth = parseISODate(settings.birth);
+          if (settings.mode === "age" && birth && career <= birth)
+            return mark(inputs.career, "O início da carreira tem de ser depois do nascimento.");
+        }
+        return null;
+      }
+
+      function updatePreview(showErrors) {
+        const settings = readForm();
+        const hasInput =
+          settings.mode === "date" ? settings.date : settings.birth || inputs.ageYears.value;
+        const error = validate(settings);
+        if (!showErrors) Object.values(inputs).forEach((input) => input.removeAttribute("aria-invalid"));
+        if (error) {
+          const show = showErrors || (hasInput && settings.mode === "date") || (settings.birth && inputs.ageYears.value);
+          preview.textContent = show ? error : "Preencha os campos acima.";
+          preview.classList.toggle("error", Boolean(show));
+          return null;
+        }
+        preview.classList.remove("error");
+        preview.textContent = "A sua reforma: " + dateFormat.format(resolveTarget(settings));
+        return settings;
+      }
+
+      function showSetup(current) {
+        clearTimeout(timer);
+        if (current) {
+          setMode(current.mode === "date" ? "date" : "age");
+          inputs.birth.value = current.birth || "";
+          inputs.ageYears.value = Number.isFinite(Number(current.ageYears)) && current.ageYears !== "" ? current.ageYears : "";
+          inputs.ageMonths.value = current.ageMonths ?? "";
+          inputs.target.value = current.date || "";
+          inputs.career.value = current.career || "";
+        } else {
+          setMode("age");
+        }
+        cancelBtn.hidden = !resolveTarget(current);
+        updatePreview();
+        els.countdown.hidden = true;
+        els.setup.hidden = false;
+        document.title = "Até à reforma";
+      }
+
+      modeButtons.forEach((btn) => btn.addEventListener("click", () => setMode(btn.dataset.mode)));
+      Object.values(inputs).forEach((input) => input.addEventListener("input", () => updatePreview()));
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const settings = updatePreview(true);
+        if (!settings) return;
+        saveSettings(settings);
+        showCountdown(settings);
+      });
+
+      cancelBtn.addEventListener("click", () => showCountdown(loadSettings()));
+      document.getElementById("edit").addEventListener("click", () => showSetup(loadSettings()));
+
+      /* =========================================================
+         Arranque
+         ========================================================= */
+      const saved = loadSettings();
+      if (resolveTarget(saved)) showCountdown(saved);
+      else showSetup(null);
+    </script>
+  </body>
+</html>
